@@ -1,11 +1,24 @@
+//Wiring:
+//The ESC is connected to at least 4V input over the female battery plug
+//The male plug is connacted to the dc motor - The motor is made for 3 - 6V (6V is decreasing the lifetime drastically, I hope 4V is okay)
+//the black  wire of the three wire plug is connected to ground of the Arduino 
+//the white wire to Pin26 (or any other PWM Pin) 
+//the red wire can be used to power the arduino (?)
+
+//Explanation
+//The ESC will only work after it got an "arming signal" of 1000 /(1500?) PWM - a repeating beeping sound is "I am okay, but need the arming signal"
+//1500 PWM is the neutral position
+//above is one direction - what is max?
+//below is the other direction -what is max speed?
+
 # include <ESP32Servo.h>
 
 Servo esc;
 
 void setup() {
-  Serial.begin(115200);  // Starte die serielle Kommunikation
-  esc.attach(26);
-  esc.writeMicroseconds(1000);
+  Serial.begin(115200);  // Starte serial communication
+  esc.attach(26); //The Pin the ESC is connected to
+  esc.writeMicroseconds(1000); //The arming signal
   delay(2000);
 }
 
