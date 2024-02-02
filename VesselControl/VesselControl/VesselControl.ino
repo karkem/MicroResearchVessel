@@ -5,6 +5,7 @@
 //Sonar Pin: 16,17(rx,tx) + 5V external power
 //2x ESC with DC Motor - Pin:25,26,gnd + 4V external power
 //Stepper
+//Contact to calibrate stepper
 //nrf24 Pin: 14,27 + 3V external power
 //Thermometer
 //SD card reader 
@@ -54,6 +55,22 @@ void setup() {
 
 void loop() {
   //read radio command
+  //if there is a manual mode flag:
+    //switch to manual mode:
+    //direct controll off the two engins and the winch
+
+  //If there is a new mission with waypoints:
+    //for every waypoint:
+      //Go to waypoint 
+      //If waypoint reached:
+        //hold position
+        //lower winch to depth 
+        //get winch back up 
+        //write temperature data and position onto the sd card
+        //when winch is back up: go to next waypoint 
+      
+
+
   
 
 }
