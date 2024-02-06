@@ -15,6 +15,8 @@
 # include <SPI.h> //For nrf24
 # include <nRF24L01.h> //For nrf24
 # include <RF24.h> //For nrf24
+# include <TinyStepper_28BYJ_48.h> //for stepper
+
 
 //variables for sonar
 unsigned char buffer_RTT[4] = {0};
@@ -29,6 +31,16 @@ Servo escR; //Right Motor
 //variables for nrf24
 RF24 radio(14, 27); // CE, CSN
 const byte address[6] = "00001";
+
+//variables for stepper
+const int MOTOR_IN1_PIN = 11;
+const int MOTOR_IN2_PIN = 10;
+const int MOTOR_IN3_PIN = 6;
+const int MOTOR_IN4_PIN = 5;
+
+const int STEPS_PER_REVOLUTION = 2048;
+TinyStepper_28BYJ_48 stepper; // create the stepper motor object
+
 
 void setup() {
   Serial.begin(115200);  // Starte serial communication
