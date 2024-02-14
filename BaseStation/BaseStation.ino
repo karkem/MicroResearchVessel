@@ -16,6 +16,8 @@ struct package {
   int id = 1;
   float temperature = 18.3;
   int depth = 0;
+  int engineL = 1500;
+  int engineR = 1500;
   char  text[300] = "Text to be transmit";
 };
 
@@ -72,6 +74,8 @@ void loop() {
     }
     //char text[300];
   sprintf(dataTransmit.text, "%d", variableA);
+  dataTransmit.engineL = variableB;
+
   //dataTransmit.text = text
   //Serial.println(text);
   //radio.write(&text, sizeof(text));
@@ -79,10 +83,12 @@ void loop() {
   //radio.write(&variableA, sizeof(variableA));
   //delay(1000);
   }
-  SerialBT.print(dataRecive.depth);
   //Write bluetooth data over radio to the MRV
   //number += 1;
   radio_listen_and_transmit();
+
+  SerialBT.println(dataRecieve.depth);
+
   delay(200);
 }
 

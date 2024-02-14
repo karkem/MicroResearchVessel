@@ -3,7 +3,7 @@
 //The ESP32
 //GPS module: 1,3 (rx,tx)
 //Sonar Pin: 16,17(rx,tx) + 5V external power
-//2x ESC with DC Motor - Pin:25,26,gnd + 4V external power
+//2x ESC with DC Motor - Pin:32,26,gnd + 4V external power
 //Stepper 12, 14, 27, 26
 //Contact to calibrate stepper
 //nrf24 Pin: 25,33, + 3V external power + 23,19,18
@@ -39,6 +39,8 @@ struct package {
   int id = 1;
   float temperature = 18.3;
   int depth = 0;
+  int engineL = 1500;
+  int engineR = 1500;
   char  text[300] = "Text to be transmit";
 };
 
@@ -79,7 +81,7 @@ void setup() {
   Serial.begin(115200);  // Starte serial communication
   
   //Set up ESCs for DC Motors
-  escL.attach(26); //The Pin the ESC is connected to
+  escL.attach(32); //The Pin the ESC is connected to
   escR.attach(25); //The Pin the ESC is connected to
   escL.writeMicroseconds(1000); //The arming signal
   escR.writeMicroseconds(1000); //The arming signal
@@ -112,6 +114,8 @@ void setup() {
 
 void loop() {
   read_radio();
+
+  escL.writeMicroseconds(dataRecieve.engineL);
 
   controle_stepper();
 
