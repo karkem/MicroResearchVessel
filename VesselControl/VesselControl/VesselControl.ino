@@ -8,7 +8,7 @@
 //Contact to calibrate stepper
 //nrf24 Pin: 25,33, + 3V external power + 23,19,18
 //Thermometer
-//SD card reader 
+//SD card reader PIN (SPI like nrf24 but with one ce pin)
 
 # include <ESP32Servo.h> //for ESCs
 # include <SoftwareSerial.h> //for Sonar
@@ -17,8 +17,7 @@
 # include <RF24.h> //For nrf24
 # include <TinyStepper_28BYJ_48.h> //for stepper
 # include <TinyStepper.h> //alternative to above!
-# include "neo6mGPS.h" //For the GPS Module
-
+//# include "neo6mGPS.h" //For the GPS Module
 
 
 //variables for sonar
@@ -34,7 +33,18 @@ Servo escR; //Right Motor
 //variables for nrf24
 char text[32] = "";
 RF24 radio(25, 33); // CE, CSN
-const byte address[6] = "00001";
+const byte addresses[][6] = {"0"};
+
+struct package {
+  int id = 1;
+  float temperature = 18.3;
+  int depth = 0;
+  char  text[300] = "Text to be transmit";
+};
+
+typedef struct package Package;
+Package dataRecieve;
+Package dataTransmit;
 
 //variables for stepper
 const int MOTOR_IN1_PIN = 11;
@@ -61,7 +71,7 @@ int destination = 0;
 TinyStepper stepper(HALFSTEPS, IN1, IN2, IN3, IN4);
 
 //variables for GPS
-neo6mGPS GPS;
+//neo6mGPS GPS;
 
 
 
@@ -78,17 +88,19 @@ void setup() {
   SonarSerial.begin(115200);
 
   //Set up for nrf24
-  Serial.begin(9600);
   radio.begin();
-  radio.openReadingPipe(0, address);
-  radio.setPALevel(RF24_PA_MIN);
+  radio.setChannel(115); 
+  //radio.openReadingPipe(0, address);
+  radio.setPALevel(RF24_PA_MIN); //MAX?
+  radio.setDataRate(RF24_250KBPS); //is this important for range?
+  radio.openReadingPipe(1, addresses[0]);
   radio.startListening();
 
   //Setup for stepper
   stepper.Enable();
 
   //Setup GPS
-  GPS.begin(Serial1);
+  //GPS.begin(Serial1);
 
 
   delay(2000);
@@ -99,16 +111,15 @@ void setup() {
 
 
 void loop() {
-  //read radio command
   read_radio();
 
   controle_stepper();
 
   read_sonar();
 
-  read_GPS();
+  //read_GPS();
 
-  delay(2000);
+  //delay(2000); //For some reason the sonar has a problem with the delay
   //if there is a manual mode flag:
     //switch to manual mode:
     //direct controll off the two engins and the winch
@@ -142,14 +153,15 @@ void read_sonar(){
         Serial.print("Distance:");
         Serial.print(Distance);
         Serial.println("mm");
+        dataTransmit.depth = Distance;
       }
     }
   }
 }
 
-void read_GPS(){
-    if(GPS.available())
-  {
+//void read_GPS(){
+  //  if(GPS.available())
+  //{
     //Serial.print(GPS.utc_year);  Serial.print(" | ");
     //erial.print(GPS.utc_month); Serial.print(" | ");
     //Serial.print(GPS.utc_day);   Serial.print(" | ");
@@ -162,10 +174,11 @@ void read_GPS(){
     //Serial.print(GPS.cog_true);  Serial.print(" | ");
     //Serial.print(GPS.navStatus);
     //Serial.println();
-  }
-}
+  //}
+//}
 
 void controle_stepper(){
+  destination = atoi(dataRecieve.text);
   go = destination - location;
   Serial.print(" go: ");
   Serial.print(go);
@@ -178,10 +191,39 @@ void controle_stepper(){
 }
 
 void read_radio(){
-    if (radio.available()) {
-    radio.read(&text, sizeof(text));
-    Serial.println("recieved:");
-    Serial.println(text);
-    destination = atoi(text);
-  }
+    //Listen
+    //if (radio.available()) {
+    //radio.read(&text, sizeof(text));
+    //Serial.println("recieved:");
+    //Serial.println(text);
+    //destination = atoi(text);
+    //Listen
+    if ( radio.available()) {
+      while (radio.available()){ //While might be dangerous!!!
+        radio.read( &dataRecieve, sizeof(dataRecieve) );
+      }
+      Serial.println("Recieve: ");
+      Serial.print("Package:");
+      Serial.print(dataRecieve.id);
+      Serial.print("\n");
+      Serial.println(dataRecieve.temperature);
+      Serial.println(dataRecieve.text);
+      Serial.print("\n");
+    }
+    delay(200);
+
+  radio.stopListening();
+  dataTransmit.id = dataTransmit.id + 1;
+  dataTransmit.temperature = dataTransmit.temperature+0.1;
+  Serial.println("Transmit: ");
+  Serial.print("Package:");
+  Serial.print(dataTransmit.id);
+  Serial.print("\n");
+  Serial.println(dataTransmit.temperature);
+  Serial.println(dataTransmit.text);
+  Serial.print("\n");
+  radio.openWritingPipe(addresses[0]);
+  radio.write(&dataTransmit, sizeof(dataTransmit));
+  radio.openReadingPipe(1, addresses[0]);
+  radio.startListening();
 }

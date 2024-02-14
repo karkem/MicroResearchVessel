@@ -5,12 +5,23 @@
 
 # include <BluetoothSerial.h>
 # include <SPI.h>
-# include <nRF24L01.h>
+//# include <nRF24L01.h>
 # include <RF24.h>
 
 //Variables for nRF24
 RF24 radio(14, 27); // CE, CSN
-const byte address[6] = "00001";
+byte addresses[][6] = {"0"};
+
+struct package {
+  int id = 1;
+  float temperature = 18.3;
+  int depth = 0;
+  char  text[300] = "Text to be transmit";
+};
+
+typedef struct package Package;
+Package dataRecieve;
+Package dataTransmit;
 
 // Variables for Bluetooth
 BluetoothSerial SerialBT; //Create Bluetooth object
@@ -22,14 +33,18 @@ int variableC = 0;
 
 void setup() {
   //Set up Bluetooth
-  Serial.begin(9600); //Start serial monitor
+  Serial.begin(115200); //Start serial monitor
+  delay(1000);
   SerialBT.begin("Arduino_bluetooth"); //Start bluetooth client
 
   //Set up nrf24 Radio
-  radio.begin();
-  radio.openWritingPipe(address);
-  radio.setPALevel(RF24_PA_MIN);
-  radio.stopListening();
+  radio.begin();  
+  radio.setChannel(115); 
+  radio.setPALevel(RF24_PA_MAX);
+  radio.setDataRate( RF24_250KBPS );
+  
+  radio.openReadingPipe(1, addresses[0]);
+  radio.startListening();
 
 }
 
@@ -55,19 +70,50 @@ void loop() {
       Serial.print("Received 'c': ");
       Serial.println(variableC);
     }
-      char text[9];
-  sprintf(text, "%d", variableA);
-  Serial.println(text);
-  radio.write(&text, sizeof(text));
+    //char text[300];
+  sprintf(dataTransmit.text, "%d", variableA);
+  //dataTransmit.text = text
+  //Serial.println(text);
+  //radio.write(&text, sizeof(text));
   //Serial.println(variableA);
   //radio.write(&variableA, sizeof(variableA));
-  delay(1000);
+  //delay(1000);
+  }
+  SerialBT.print(dataRecive.depth);
+  //Write bluetooth data over radio to the MRV
+  //number += 1;
+  radio_listen_and_transmit();
+  delay(200);
+}
+
+void radio_listen_and_transmit(){
+  if ( radio.available()) {
+    while (radio.available()){
+      radio.read( &dataRecieve, sizeof(dataRecieve) );
+    }
+    Serial.println("Recieve: ");
+    Serial.print("Package:");
+    Serial.print(dataRecieve.id);
+    Serial.print("\n");
+    Serial.println(dataRecieve.temperature);
+    Serial.println(dataRecieve.depth);
+    Serial.print("\n");
   }
 
-  //Write bluetooth data over radio to the MRV
+  delay(200);
 
-
-  //number += 1;
-
-
+  radio.stopListening();
+  dataTransmit.id = dataTransmit.id + 1;
+  dataTransmit.temperature = dataTransmit.temperature+0.1;
+  Serial.println("Transmit: ");
+  Serial.print("Package:");
+  Serial.print(dataTransmit.id);
+  Serial.print("\n");
+  Serial.println(dataTransmit.temperature);
+  Serial.println(dataTransmit.text);
+  Serial.print("\n");
+  radio.openWritingPipe(addresses[0]);
+  radio.write(&dataTransmit, sizeof(dataTransmit));
+  radio.openReadingPipe(1, addresses[0]);
+  radio.startListening();
 }
