@@ -7,7 +7,7 @@
 //Stepper 12, 14, 27, 26
 //Contact to calibrate stepper
 //nrf24 Pin: 25,33, + 3V external power + 23,19,18
-//Thermometer
+//Thermometer Pin 4
 //SD card reader PIN (SPI like nrf24 but with one ce pin)
 
 # include <ESP32Servo.h> //for ESCs
@@ -18,6 +18,8 @@
 # include <TinyStepper_28BYJ_48.h> //for stepper
 # include <TinyStepper.h> //alternative to above!
 //# include "neo6mGPS.h" //For the GPS Module
+# include <OneWire.h> //for temp sensor 
+# include <DallasTemperature.h> //for temp sensor
 
 
 //variables for sonar
@@ -37,7 +39,7 @@ const byte addresses[][6] = {"0"};
 
 struct package {
   int id = 1;
-  float temperature = 18.3;
+  float temperature = 0;
   int depth = 0;
   int engineL = 1500;
   int engineR = 1500;
@@ -75,7 +77,16 @@ TinyStepper stepper(HALFSTEPS, IN1, IN2, IN3, IN4);
 //variables for GPS
 //neo6mGPS GPS;
 
+//variables for Temperature sensor
+// GPIO where the DS18B20 is connected to
+const int oneWireBus = 4; 
+// Setup a oneWire instance to communicate with any OneWire devices
+OneWire oneWire(oneWireBus);
+// Pass our oneWire reference to Dallas Temperature sensor 
+DallasTemperature sensors(&oneWire);
 
+//Variables for stepper calibration
+const int cablePin = 35;
 
 void setup() {
   Serial.begin(115200);  // Starte serial communication
@@ -87,7 +98,7 @@ void setup() {
   escR.writeMicroseconds(1000); //The arming signal
 
   //Set up sonar
-  SonarSerial.begin(115200);
+  //SonarSerial.begin(115200);
 
   //Set up for nrf24
   radio.begin();
@@ -104,6 +115,11 @@ void setup() {
   //Setup GPS
   //GPS.begin(Serial1);
 
+  //set up temp sensor
+  sensors.begin();
+
+  //set up stepper calibrater
+  pinMode(cablePin, INPUT);
 
   delay(2000);
 
@@ -121,6 +137,10 @@ void loop() {
 
   read_sonar();
 
+  read_temp();
+
+  Serial.print("calibrate stepper: ");
+  Serial.println(calibrate_stepper());
   //read_GPS();
 
   //delay(2000); //For some reason the sonar has a problem with the delay
@@ -139,6 +159,12 @@ void loop() {
         //when winch is back up: go to next waypoint 
       
 
+}
+void read_temp(){
+  // Call sensors.requestTemperatures() to issue a global temperature and Requests to all devices on the bus
+  sensors.requestTemperatures(); 
+  // Why "byIndex"? You can have more than one IC on the same bus. 0 refers to the first IC on the wire
+  dataTransmit.temperature = sensors.getTempCByIndex(0);
 }
 
 void read_sonar(){
@@ -182,6 +208,9 @@ void read_sonar(){
 //}
 
 void controle_stepper(){
+  if (calibrate_stepper()){
+    location = 0;
+  }
   destination = atoi(dataRecieve.text);
   go = destination - location;
   Serial.print(" go: ");
@@ -193,6 +222,17 @@ void controle_stepper(){
   stepper.Move(go);
   location = destination;
 }
+
+bool calibrate_stepper() {
+  // Read the state of the cablePin
+  int cableState = digitalRead(cablePin);
+  if (cableState == HIGH) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 
 void read_radio(){
     //Listen

@@ -1,37 +1,36 @@
 /*********
   Rui Santos
-  Complete project details at https://randomnerdtutorials.com  
-  Based on the Dallas Temperature Library example
+  Complete project details at https://RandomNerdTutorials.com  
 *********/
+
+//connect pin 4 - white and over resistor to +, black -, red + (3v) 
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-// Data wire is conntec to the Arduino digital pin 4
-#define ONE_WIRE_BUS 4
+// GPIO where the DS18B20 is connected to
+const int oneWireBus = 16;     
 
 // Setup a oneWire instance to communicate with any OneWire devices
-OneWire oneWire(ONE_WIRE_BUS);
+OneWire oneWire(oneWireBus);
 
 // Pass our oneWire reference to Dallas Temperature sensor 
 DallasTemperature sensors(&oneWire);
 
-void setup(void)
-{
-  // Start serial communication for debugging purposes
-  Serial.begin(9600);
-  // Start up the library
+void setup() {
+  // Start the Serial Monitor
+  Serial.begin(115200);
+  // Start the DS18B20 sensor
   sensors.begin();
 }
 
-void loop(void){ 
-  // Call sensors.requestTemperatures() to issue a global temperature and Requests to all devices on the bus
+void loop() {
   sensors.requestTemperatures(); 
-  
-  Serial.print("Celsius temperature: ");
-  // Why "byIndex"? You can have more than one IC on the same bus. 0 refers to the first IC on the wire
-  Serial.print(sensors.getTempCByIndex(0)); 
-  Serial.print(" - Fahrenheit temperature: ");
-  Serial.println(sensors.getTempFByIndex(0));
-  delay(1000);
+  float temperatureC = sensors.getTempCByIndex(0);
+  float temperatureF = sensors.getTempFByIndex(0);
+  Serial.print(temperatureC);
+  Serial.println("ºC");
+  Serial.print(temperatureF);
+  Serial.println("ºF");
+  delay(5000);
 }

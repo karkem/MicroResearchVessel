@@ -12,18 +12,29 @@
 RF24 radio(14, 27); // CE, CSN
 byte addresses[][6] = {"0"};
 
-struct package {
-  int id = 1;
-  float temperature = 18.3;
+struct packageFromBoat {
+  float temperature_water = 0;
+  float temperatur_air = 0
   int depth = 0;
-  int engineL = 1500;
-  int engineR = 1500;
-  char  text[300] = "Text to be transmit";
+  int Battey = 0; //Percentage 0 to 100
+  float lat = 0;
+  float lon = 0;
+  float heading = 0; //maybe Compass?
+  float Stepper_depth = 0;
 };
 
-typedef struct package Package;
-Package dataRecieve;
-Package dataTransmit;
+struct packageToBoat {
+  int manual_mode = 0; //1 or 0 
+  int engineL = 1500;
+  int engineR = 1500;
+  float Stepper_depth = 0;
+  char text[300] = "";
+};
+
+//typedef struct packageFromBoat packageFromBoat;
+//typedef struct packageToBoat packageToBoat;
+//packageFromBoat packageFromBoat;
+//packageToBoat packageToBoat;
 
 // Variables for Bluetooth
 BluetoothSerial SerialBT; //Create Bluetooth object
@@ -32,6 +43,8 @@ int variableA = 0; // Initialize variables for the bluetooth input
 int variableB = 0;
 int variableC = 0;
 
+#define ARRAY_SIZE 5
+//float BlSendText[5]; //(x,y,depth,temp,stepper_depth)
 
 void setup() {
   //Set up Bluetooth
@@ -76,6 +89,15 @@ void loop() {
   sprintf(dataTransmit.text, "%d", variableA);
   dataTransmit.engineL = variableB;
 
+
+ 
+  //BlSendText[0] = 10.0;
+  //BlSendText[1] = 9.0;
+  //BlSendText[2] = 8.0;
+  //BlSendText[3] = 7.0;
+  //BlSendText[4] = 6.0;
+
+
   //dataTransmit.text = text
   //Serial.println(text);
   //radio.write(&text, sizeof(text));
@@ -87,7 +109,20 @@ void loop() {
   //number += 1;
   radio_listen_and_transmit();
 
-  SerialBT.println(dataRecieve.depth);
+  //SerialBT.println(dataRecieve.depth);
+  //SerialBT.println(BlSendText);
+
+  // Create an array of floats
+  float BlSendText[ARRAY_SIZE] = {10.0, 9.0, 8.0, 7.0, 6.0};
+
+  // Convert the array to a semicolon-separated string
+  String result = arrayToString(BlSendText, ARRAY_SIZE);
+  SerialBT.println(result);
+  //Serial.println(BlSendText);
+  Serial.println(result);
+
+
+
 
   delay(200);
 }
@@ -122,4 +157,20 @@ void radio_listen_and_transmit(){
   radio.write(&dataTransmit, sizeof(dataTransmit));
   radio.openReadingPipe(1, addresses[0]);
   radio.startListening();
+}
+
+// Function to convert array to semicolon-separated string
+String arrayToString(float array[], int size) {
+  String result = "";
+  
+  for (int i = 0; i < size; i++) {
+    result += String(array[i], 2);  // Convert float to string with 2 decimal places
+
+    // Add semicolon if it's not the last element
+    if (i < size - 1) {
+      result += ';';
+    }
+  }
+
+  return result;
 }
